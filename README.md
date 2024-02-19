@@ -69,6 +69,26 @@ touch targets.json
 ]
 ```
 
+## Make sure ssh service is active
+
+- windows
+
+```shell
+# checkout status
+Get-Service sshd
+# turn on ssh service
+Start-Service sshd
+```
+
+- Linux
+
+```shell
+# checkout status
+sudo systemctl status ssh
+# turn on ssh service
+sudo systemctl start ssh
+```
+
 ## How to use
 
 - excute python file.

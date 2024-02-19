@@ -1,59 +1,45 @@
-import paramiko
 import json
 import time
-
-
-def remote_vm_command(ip, port, user, pwd, command, encoding):
-    print(f"Connecting to {ip}...")
-    try:
-        ssh.connect(ip, username=user, port=port, password=pwd)
-        print("Connected successfully.")
-        ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(command)
-        output = ssh_stdout.read().decode(encoding)
-        print(output)
-    except Exception as e:
-        print(f"Error: {e}")
+from ssh_utils import SSHClient
+from parser_utils import parse_linux_output, parse_windows_output
 
 
 if __name__ == "__main__":
     starttime = time.time()
 
+    bibi_percent = 80
+    high_usage_ips = []
+
     with open("targets.json") as json_file:
         targets = json.load(json_file)
 
-    linux_command = "df -h"
-    windows_command = 'powershell -Command "Get-Volume"'
+    ssh = SSHClient()
 
-    print("Initializing SSHClient...")
-    ssh = paramiko.SSHClient()
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    print("SSHClient initialized.")
+    command_and_parser = {
+        "linux": ("df /", parse_linux_output),
+        "windows": (
+            'powershell -Command "Get-CimInstance -ClassName Win32_logicalDisk -Filter "DriveType=3" | Select-Object -Property DeviceID, Size, FreeSpace | Format-Table -AutoSize"',
+            parse_windows_output,
+        ),
+    }
 
     for target in targets:
-        if target["os"] == "linux":
-            remote_vm_command(
-                target["ip"],
-                target["port"],
-                target["user"],
-                target["pwd"],
-                linux_command,
-                encoding="utf-8",
+        ssh.connect(target["ip"], target["port"], target["user"], target["pwd"])
+        command, parser = command_and_parser.get(target["os"], (None, None))
+        if command and parser:
+            output = ssh.execute_command(
+                command, "utf-8" if target["os"] == "linux" else "cp950"
             )
-        elif target["os"] == "windows":
-            remote_vm_command(
-                target["ip"],
-                target["port"],
-                target["user"],
-                target["pwd"],
-                windows_command,
-                encoding="cp950",
-            )
-        else:
-            pass
-    print("Closing SSHClient...")
+            usages = parser(output)
+            for usage in usages:
+                if usage >= bibi_percent and target["ip"] not in high_usage_ips:
+                    high_usage_ips.append(target["ip"])
+            print(f"ip: {target['ip']}, usage: {usages}%")
+
+    print("High usage IPs: ", high_usage_ips)
+
     ssh.close()
-    print("SSHClient closed.")
 
     endtime = time.time()
     deltatime = endtime - starttime
-    print(f"time used: {deltatime}s")
+    print(f"time used: {round(deltatime, 1)}s")
