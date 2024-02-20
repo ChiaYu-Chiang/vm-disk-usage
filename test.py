@@ -2,6 +2,7 @@ import json
 import time
 from ssh_utils import SSHClient
 from parser_utils import parse_linux_output, parse_windows_output
+from sendmail import send_email
 
 
 if __name__ == "__main__":
@@ -22,6 +23,8 @@ if __name__ == "__main__":
             parse_windows_output,
         ),
     }
+
+    email_body = ""
 
     for target in targets:
         ssh.connect(target["ip"], target["port"], target["user"], target["pwd"])
@@ -52,11 +55,16 @@ if __name__ == "__main__":
             print(f"ip: {target['ip']}, usage: {usages}%")
 
     if high_usage_ips:
-        print(f"檢測到高於磁碟使用率 {target_percent}% 的VM IP:")
+        email_body = f"檢測到高於磁碟使用率 {target_percent}% 的VM IP:\n"
         for ip in high_usage_ips:
-            print(ip)
+            email_body += ip + "\n"
     else:
-        print(f"未檢測到高於磁碟使用率 {target_percent}% 的VM")
+        email_body = f"未檢測到高於磁碟使用率 {target_percent}% 的VM\n"
+    print(email_body)
+
+    subject = "高磁碟使用率通知"
+    to_email = "brian_chiang@chief.com.tw"
+    send_email(subject, email_body, to_email)
 
     ssh.close()
 
