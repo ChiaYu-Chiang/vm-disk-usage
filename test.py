@@ -1,41 +1,65 @@
-def parse_linux_output(output):
-    lines = output.strip().split("\n")
-    data_line = lines[1]
-    total_space = int(data_line.split()[1])
-    used_space = int(data_line.split()[2])
-    usage_percent = round((used_space / total_space) * 100, 1)
-    return [usage_percent]
+import json
+import time
+from ssh_utils import SSHClient
+from parser_utils import parse_linux_output, parse_windows_output
 
 
-def parse_windows_output(output):
-    lines = output.strip().split("\n")
-    data_line = lines[2:]
-    usages = []
-    for line in data_line:
-        data = line.split()
-        free_space = int(data[2])
-        total_space = int(data[1])
-        used_space = total_space - free_space
-        usage_percent = round((used_space / total_space) * 100, 1)
-        usages.append(usage_percent)
-    return usages
+if __name__ == "__main__":
+    starttime = time.time()
 
+    target_percent = 80
+    high_usage_ips = []
 
-# 在主程式中測試 Linux 輸出
-linux_output = """
-Filesystem     1K-blocks    Used Available Use% Mounted on
-/dev/sda1        2000000 1000000    900000  50% /
-"""
-linux_usages = parse_linux_output(linux_output)
-print(linux_usages)  # 應該輸出 [50.0]
+    with open("targets.json") as json_file:
+        targets = json.load(json_file)
 
-# 在主程式中測試 Windows 輸出
-windows_output = """
-DeviceID         Size   FreeSpace
---------         ----   ---------
-C:       106796412928 66590281728
-D:       100000000000 20000000000
-E:       100000000000 15000000000
-"""
-windows_usages = parse_windows_output(windows_output)
-print(windows_usages)  # 應該輸出 [37.8, 85.0, 85.0]
+    ssh = SSHClient()
+
+    command_and_parser = {
+        "linux": ("df /", parse_linux_output),
+        "windows": (
+            'powershell -Command "Get-CimInstance -ClassName Win32_logicalDisk -Filter "DriveType=3" | Select-Object -Property DeviceID, Size, FreeSpace | Format-Table -AutoSize"',
+            parse_windows_output,
+        ),
+    }
+
+    for target in targets:
+        ssh.connect(target["ip"], target["port"], target["user"], target["pwd"])
+        command, parser = command_and_parser.get(target["os"], (None, None))
+        if command and parser:
+            output = ssh.execute_command(
+                command, "utf-8" if target["os"] == "linux" else "cp950"
+            )
+
+            linux_fake_output = """
+            Filesystem     1K-blocks    Used Available Use% Mounted on
+            /dev/sda1       15481840 15117368   9940880  34% /
+            """
+            windows_fake_output = """
+            DeviceID         Size   FreeSpace
+            --------         ----   ---------
+            C:           1000000000    100000000
+            D:           2000000000    100000000
+            E:           3000000000    100000000
+            """
+            fake_output = (
+                linux_fake_output if target["os"] == "linux" else windows_fake_output
+            )
+            usages = parser(fake_output)
+            for usage in usages:
+                if usage >= target_percent and target["ip"] not in high_usage_ips:
+                    high_usage_ips.append(target["ip"])
+            print(f"ip: {target['ip']}, usage: {usages}%")
+
+    if high_usage_ips:
+        print(f"檢測到高於磁碟使用率 {target_percent}% 的VM IP:")
+        for ip in high_usage_ips:
+            print(ip)
+    else:
+        print(f"未檢測到高於磁碟使用率 {target_percent}% 的VM")
+
+    ssh.close()
+
+    endtime = time.time()
+    deltatime = endtime - starttime
+    print(f"time used: {round(deltatime, 1)}s")

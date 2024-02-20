@@ -7,7 +7,7 @@ from parser_utils import parse_linux_output, parse_windows_output
 if __name__ == "__main__":
     starttime = time.time()
 
-    bibi_percent = 80
+    target_percent = 80
     high_usage_ips = []
 
     with open("targets.json") as json_file:
@@ -32,11 +32,16 @@ if __name__ == "__main__":
             )
             usages = parser(output)
             for usage in usages:
-                if usage >= bibi_percent and target["ip"] not in high_usage_ips:
+                if usage >= target_percent and target["ip"] not in high_usage_ips:
                     high_usage_ips.append(target["ip"])
             print(f"ip: {target['ip']}, usage: {usages}%")
 
-    print("High usage IPs: ", high_usage_ips)
+    if high_usage_ips:
+        print(f"檢測到高於磁碟使用率 {target_percent}% 的VM IP:")
+        for ip in high_usage_ips:
+            print(ip)
+    else:
+        print(f"未檢測到高於磁碟使用率 {target_percent}% 的VM")
 
     ssh.close()
 
