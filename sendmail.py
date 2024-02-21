@@ -10,7 +10,7 @@ email_settings = {
     "use_tls": False,
     "username": "",  # 請填入您的郵件帳號
     "password": "",  # 請填入您的郵件密碼
-    "from_email": "VM Disk Usage <brian_chiang@chief.com.tw>",
+    "from_email": "VM Disk Usage <example@example.com>",
 }
 
 
@@ -46,5 +46,5 @@ if __name__ == "__main__":
     # 使用範例
     subject = "test-高磁碟使用率通知"
     body = "請確認是否能成功收到這封信"
-    to_email = "s87925306@kimo.com, brian_chiang@chief.com.tw, allen_yang@chief.com.tw"  # 收件人的郵件地址
+    to_email = "example@example.com"  # 收件人的郵件地址
     send_email(subject, body, to_email)
