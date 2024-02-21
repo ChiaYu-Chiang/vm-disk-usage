@@ -8,7 +8,7 @@ from sendmail import send_email
 if __name__ == "__main__":
     starttime = time.time()
 
-    target_percent = 80
+    target_percent = 75
     high_usage_ips = []
 
     with open("targets.json") as json_file:
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     print(email_body)
 
     subject = "高磁碟使用率通知"
-    to_email = "example@example.com.tw"
+    to_email = ["brian_chiang@chief.com.tw", "allen_yang@chief.com.tw"]
     send_email(subject, email_body, to_email)
 
     ssh.close()
