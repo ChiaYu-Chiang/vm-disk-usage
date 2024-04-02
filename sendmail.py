@@ -10,7 +10,7 @@ email_settings = {
     "use_tls": False,
     "username": "",  # 請填入您的郵件帳號
     "password": "",  # 請填入您的郵件密碼
-    "from_email": "VM Disk Usage <example@example.com>",
+    "from_email": "VM Disk Usage <brian_chiang@chief.com.tw>",
 }
 
 
@@ -23,7 +23,7 @@ def send_email(subject, body, to_email):
     msg["Subject"] = subject
 
     # 添加郵件內容
-    msg.attach(MIMEText(body, "plain"))
+    msg.attach(MIMEText(body, "html"))
     
     to_email_list = to_email.split(", ")
 
@@ -46,5 +46,9 @@ if __name__ == "__main__":
     # 使用範例
     subject = "test-高磁碟使用率通知"
     body = "請確認是否能成功收到這封信"
-    to_email = "example@example.com"  # 收件人的郵件地址
-    send_email(subject, body, to_email)
+    html_body = """
+    <span style="color: red;">這邊應該要紅字</span>
+    這邊應該要黑字
+    """
+    to_email = "example@example.com.tw"  # 收件人的郵件地址
+    send_email(subject, html_body, to_email)

@@ -8,7 +8,8 @@ from sendmail import send_email
 if __name__ == "__main__":
     starttime = time.time()
 
-    target_percent = 75
+    target_percent = 80
+    scanned_vms = []
     high_usage_ips = []
 
     with open("targets.json") as json_file:
@@ -25,28 +26,42 @@ if __name__ == "__main__":
     }
 
     for target in targets:
-        ssh.connect(target["ip"], target["port"], target["user"], target["pwd"])
+        try:
+            ssh.connect(target["ip"], target["port"], target["user"], target["pwd"])
+        except Exception as e:
+            print(f"Error connecting to {target['ip']}: {e}")
+            continue
         command, parser = command_and_parser.get(target["os"], (None, None))
         if command and parser:
             output = ssh.execute_command(
                 command, "utf-8" if target["os"] == "linux" else "cp950"
             )
-            usages = parser(output)
-            for usage in usages:
-                if usage >= target_percent and target["ip"] not in high_usage_ips:
-                    high_usage_ips.append(target["ip"])
-            print(f"ip: {target['ip']}, usage: {usages}%")
-
+            if output is not None:
+                usages = parser(output)
+                for usage in usages:
+                    if usage >= target_percent and target["ip"] not in high_usage_ips:
+                        high_usage_ips.append(target["ip"])
+                    scanned_vms.append((target["ip"], target["name"]))
+                print(f"ip: {target['ip']}, usage: {usages}%")
+    
     if high_usage_ips:
-        email_body = f"檢測到高於磁碟使用率 {target_percent}% 的VM IP:\n"
+        email_body = f"<span style='color: red;'>檢測到高於磁碟使用率 {target_percent}% 的VM IP:<br>"
         for ip in high_usage_ips:
-            email_body += ip + "\n"
+            print(ip)
+            email_body += ip + "<br>"
     else:
-        email_body = f"未檢測到高於磁碟使用率 {target_percent}% 的VM\n"
+        email_body = f"<span style='color: green;'>未檢測到高於磁碟使用率 {target_percent}% 的VM<br>"
     print(email_body)
 
+    if scanned_vms:
+        email_body += f"</span>已掃描VM:<br>"
+        for vm in scanned_vms:
+            print(vm)
+            print(vm[0])
+            email_body += f"{vm[0]} {vm[1]}<br>"
+
     subject = "高磁碟使用率通知"
-    to_email = "example@example.com"
+    to_email = "brian_chiang@chief.com.tw, marco_li@chief.com.tw, aaron_lin@chief.com.tw, allen_yang@chief.com.tw"
     send_email(subject, email_body, to_email)
 
     ssh.close()
