@@ -43,6 +43,7 @@ if __name__ == "__main__":
                         high_usage_ips.append(target["ip"])
                     scanned_vms.append((target["ip"], target["name"]))
                 print(f"ip: {target['ip']}, usage: {usages}%")
+        ssh.close()
     
     if high_usage_ips:
         email_body = f"<span style='color: red;'>檢測到高於磁碟使用率 {target_percent}% 的VM IP:<br>"
@@ -63,8 +64,6 @@ if __name__ == "__main__":
     subject = "高磁碟使用率通知"
     to_email = "brian_chiang@chief.com.tw, marco_li@chief.com.tw, aaron_lin@chief.com.tw, allen_yang@chief.com.tw"
     send_email(subject, email_body, to_email)
-
-    ssh.close()
 
     endtime = time.time()
     deltatime = endtime - starttime
