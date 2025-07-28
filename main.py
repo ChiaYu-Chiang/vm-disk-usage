@@ -6,6 +6,17 @@ from sendmail import send_email
 import socket, paramiko
 
 
+def read_and_process_file(file_path):
+    try:
+        with open(file_path, "r") as f:
+            data = json.load(f)
+        targets = data.get("targets", [])
+        scanned_vms = data.get("scanned_vms", [])
+        scanned_failed_vms = data.get("scanned_failed_vms", [])
+        high_usage_ips = data.get("high_usage_ips", [])
+    except Exception as e:
+        print(f"Error reading or processing file: {e}")
+
 if __name__ == "__main__":
     starttime = time.time()
 
@@ -22,22 +33,27 @@ if __name__ == "__main__":
     scanned_failed_vms = []
     high_usage_ips = []
     targets = []
+ 
+    # 讀取堡壘網掃描的結果
+    file_path = r"scanned_intranet\data.json"
+    read_and_process_file(file_path)
     
     network = "10.210.68.0/24"
     live_hosts = scan_network(network)
-
+    
     # 將掃描到的活躍主機添加到列表
     for ip in live_hosts:
         target_info = default_target_info.copy()
         target_info["ip"] = ip
         targets.append(target_info)
     print(f"targets after ip scan: \n{targets}")
-
+    
     # 從JSON文件中讀取額外的目標主機
     with open("targets.json") as json_file:
+    # with open("waf_target.json") as json_file:
         json_targets = json.load(json_file)
         targets.extend(json_targets)
-
+    
     ssh = SSHClient()
 
     # 定義不同操作系統的檢查命令和解析函數
@@ -50,10 +66,10 @@ if __name__ == "__main__":
     }
 
     for target in targets:
-        if target["os"] == "windows":
-            scanned_failed_vms.append((target["ip"], target["name"]))
-            print("skip this windows target.")
-            continue
+        # if target["os"] == "windows":
+        #     scanned_failed_vms.append((target["ip"], target["name"]))
+        #     print("skip this windows target.")
+        #     continue
         try:
             # 嘗試SSH連接到目標主機
             ssh.connect(target["ip"], target["port"], target["user"], target["pwd"])

@@ -1,5 +1,7 @@
 .*
 !.gitignore
 targets.json
+chc_target.json
+waf_target.json
 __pycache__
 stringtojson.py

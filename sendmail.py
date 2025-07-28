@@ -5,12 +5,12 @@ from email.utils import formatdate
 
 # 郵件設定
 email_settings = {
-    "host": "mail.adsl.chief.net.tw",
+    "host": "mail.chief-tech.net",
     "port": 25,
     "use_tls": False,
     "username": "",  # 請填入您的郵件帳號
     "password": "",  # 請填入您的郵件密碼
-    "from_email": "VM Disk Usage <brian_chiang@chief.com.tw>",
+    "from_email": "VM Disk Usage <vmdiskusage@mail.chief-tech.net>",
 }
 
 
